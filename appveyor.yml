@@ -1,0 +1,26 @@
+branches:
+  only:
+    - master
+    
+version: 1.0.{build}
+
+image: Visual Studio 2017
+
+install:
+  - ps: |
+      $msiPath = "$($env:USERPROFILE)\MicrosoftAzureStorageEmulator.msi"
+      (New-Object Net.WebClient).DownloadFile('https://download.microsoft.com/download/B/4/A/B4A8422F-C564-4393-80DA-6865A8C4B32D/MicrosoftAzureStorageEmulator.msi', $msiPath)
+      cmd /c start /wait msiexec /i $msiPath /quiet
+      
+build:
+  parallel: true                  # enable MSBuild parallel builds
+  project: Azure.BlobFileManager.sln      # path to Visual Studio solution or project
+  
+before_build:
+  - dotnet restore
+
+test:
+  # only assemblies to test
+  assemblies:
+    only:
+      - Azure.BlobFileManager.Tests.dll
