@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.DataMovement;
+using BlobType = Azure.BlobFileManager.Dictionary.BlobType;
 
 namespace Azure.BlobFileManager.Services
 {
@@ -32,6 +33,12 @@ namespace Azure.BlobFileManager.Services
             _mediaConfig = mediaConfig.Value;
         }
 
+        /// <summary>
+        /// Addes a folder with a temp file
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="newFolder"></param>
+        /// <returns></returns>
         public async Task<string> AddFolder(string path, string newFolder)
         {
             var container = await GetContainer();
@@ -52,62 +59,76 @@ namespace Azure.BlobFileManager.Services
             return $"{path}{newFolder}/";
         }
 
-        public async Task<MediaDto> GetFile(string path)
+        /// <summary>
+        /// Gets a file for the given path
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> GetFile(string path)
         {
             var blob = await GetBlob(path);
             await blob.FetchAttributesAsync();
 
-            return new MediaDto
+            return new BlobDto
             {
                 ContentType = blob.Properties.ContentType,
                 DateModified = blob.Properties.LastModified,
                 DateCreated = blob.GetDateCreated(),
                 FileSize = blob.Properties.Length,
                 Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                FileType = FileType.File,
+                BlobType = BlobType.File,
                 StoragePath = blob.Uri.ToString(),
                 Path = blob.Name
             };
         }
 
-        public MediaDto GetRootFolder()
+        /// <summary>
+        /// Gets the root folder for the current user
+        /// </summary>
+        /// <returns></returns>
+        public BlobDto GetRootFolder()
         {
             Claim rootFolderClaim = _httpContextAccessor.HttpContext.User.FindFirst("RootFolder");
             if (rootFolderClaim == null)
             {
-                return new MediaDto
+                return new BlobDto
                 {
                     Name = "Root",
                     StoragePath = "/",
-                    FileType = FileType.Folder
+                    BlobType = BlobType.Folder
                 };
             }
 
-            return new MediaDto
+            return new BlobDto
             {
                 Name = rootFolderClaim.Value,
-                FileType = FileType.Folder
+                BlobType = BlobType.Folder
             };
         }
 
-        public async Task<List<MediaDto>> DeleteFile(string path)
+        /// <summary>
+        /// Deletes a file or folder based on the path specified
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public async Task<List<BlobDto>> DeleteFile(string path)
         {
             var container = await GetContainer();
 
-            List<MediaDto> deletedFiles = new List<MediaDto>();
+            List<BlobDto> deletedFiles = new List<BlobDto>();
             if (Path.HasExtension(path))
             {
                 CloudBlob blob = await GetBlob(path);
 
                 await blob.FetchAttributesAsync();
-                deletedFiles.Add(new MediaDto
+                deletedFiles.Add(new BlobDto
                 {
                     ContentType = blob.Properties.ContentType,
                     DateModified = blob.Properties.LastModified,
                     DateCreated = blob.GetDateCreated(),
                     FileSize = blob.Properties.Length,
                     Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                    FileType = FileType.File,
+                    BlobType = BlobType.File,
                     StoragePath = blob.Uri.ToString(),
                     Path = blob.Name
                 });
@@ -125,14 +146,14 @@ namespace Azure.BlobFileManager.Services
                         CloudBlob blob = (CloudBlob)result;
 
                         await blob.FetchAttributesAsync();
-                        deletedFiles.Add(new MediaDto
+                        deletedFiles.Add(new BlobDto
                         {
                             ContentType = blob.Properties.ContentType,
                             DateModified = blob.Properties.LastModified,
                             DateCreated = blob.GetDateCreated(),
                             FileSize = blob.Properties.Length,
                             Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                            FileType = FileType.File,
+                            BlobType = BlobType.File,
                             StoragePath = result.Uri.ToString(),
                             Path = blob.Name
                         });
@@ -147,7 +168,15 @@ namespace Azure.BlobFileManager.Services
             return deletedFiles;
         }
 
-        public async Task<MediaDto> AddFile(string path, string contentType, string name, byte[] file)
+        /// <summary>
+        /// Adds a file for the given content type and name
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="contentType"></param>
+        /// <param name="name"></param>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> AddFile(string path, string contentType, string name, byte[] file)
         {
             CloudBlockBlob blob = await GetBlob(path);
 
@@ -159,25 +188,30 @@ namespace Azure.BlobFileManager.Services
             await blob.SetMetadataAsync();
 
             await blob.FetchAttributesAsync();
-            return new MediaDto
+            return new BlobDto
             {
                 ContentType = blob.Properties.ContentType,
                 DateModified = blob.Properties.LastModified,
                 DateCreated = blob.GetDateCreated(),
                 FileSize = blob.Properties.Length,
                 Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                FileType = FileType.File,
+                BlobType = BlobType.File,
                 StoragePath = blob.Uri.ToString(),
                 Path = blob.Name
             };
         }
 
-        public async Task<IEnumerable<MediaDto>> GetFolderFiles(string path)
+        /// <summary>
+        /// Gets all of the files in a folder
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<BlobDto>> GetFolderFiles(string path)
         {
             var container = await GetContainer();
             var directory = container.GetDirectoryReference(path);
 
-            List<MediaDto> files = new List<MediaDto>();
+            List<BlobDto> files = new List<BlobDto>();
             foreach (IListBlobItem result in await directory.ListBlobsAsync())
             {
                 if (IsCloudBlob(result))
@@ -185,14 +219,14 @@ namespace Azure.BlobFileManager.Services
                     CloudBlob blob = (CloudBlob)result;
 
                     await blob.FetchAttributesAsync();
-                    files.Add(new MediaDto
+                    files.Add(new BlobDto
                     {
                         ContentType = blob.Properties.ContentType,
                         DateModified = blob.Properties.LastModified,
                         DateCreated = blob.GetDateCreated(),
                         FileSize = blob.Properties.Length,
                         Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                        FileType = FileType.File,
+                        BlobType = BlobType.File,
                         StoragePath = result.Uri.ToString(),
                         Path = blob.Name
                     });
@@ -202,34 +236,44 @@ namespace Azure.BlobFileManager.Services
             return files;
         }
 
-        public async Task<MediaDto> GetFolder(string path)
+        /// <summary>
+        /// Gets a folder for the given path
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> GetFolder(string path)
         {
             var container = await GetContainer();
             var directory = container.GetDirectoryReference(path);
 
-            return new MediaDto
+            return new BlobDto
             {
-                FileType = FileType.Folder,
+                BlobType = BlobType.Folder,
                 StoragePath = directory.Uri.ToString(),
                 Path = directory.Prefix,
                 Name = GetDirectoryName(path)
             };
         }
 
-        public async Task<IEnumerable<MediaDto>> GetChildFolders(string path)
+        /// <summary>
+        /// Gets all of the child folders from a given path
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<BlobDto>> GetChildFolders(string path)
         {
             var container = await GetContainer();
             var directory = container.GetDirectoryReference(path);
 
-            List<MediaDto> folders = new List<MediaDto>();
+            List<BlobDto> folders = new List<BlobDto>();
             foreach (IListBlobItem result in await directory.ListBlobsAsync())
             {
                 if (IsCloudDirectory(result))
                 {
                     CloudBlobDirectory dir = (CloudBlobDirectory)result;
-                    folders.Add(new MediaDto
+                    folders.Add(new BlobDto
                     {
-                        FileType = FileType.Folder,
+                        BlobType = BlobType.Folder,
                         StoragePath = dir.Uri.ToString(),
                         Path = dir.Prefix,
                         Name = GetDirectoryName(dir.Uri.ToString())
@@ -250,17 +294,33 @@ namespace Azure.BlobFileManager.Services
             return uri.Split('/').Last();
         }
 
-        public bool IsFolder(MediaDto item)
+        /// <summary>
+        /// indicates if the current blob is a folder
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool IsFolder(BlobDto item)
         {
-            return item.FileType == FileType.Folder;
+            return item.BlobType == BlobType.Folder;
         }
 
-        public bool IsFile(MediaDto item)
+        /// <summary>
+        /// Indicates if the current blog is a file
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool IsFile(BlobDto item)
         {
-            return item.FileType == FileType.File;
+            return item.BlobType == BlobType.File;
         }
 
-        public async Task<MediaDto> RenameFolder(MediaDto folder, string newName)
+        /// <summary>
+        /// Renames the given folder
+        /// </summary>
+        /// <param name="folder"></param>
+        /// <param name="newName"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> RenameFolder(BlobDto folder, string newName)
         {
             var container = await GetContainer();
 
@@ -296,7 +356,13 @@ namespace Azure.BlobFileManager.Services
             return folder;
         }
 
-        public async Task<MediaDto> RenameFile(MediaDto file, string newName)
+        /// <summary>
+        /// Renames the given file
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="newName"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> RenameFile(BlobDto file, string newName)
         {
             string oldPath = file.StoragePath;
             string newPath = oldPath.Replace(file.Name, newName);
@@ -312,7 +378,13 @@ namespace Azure.BlobFileManager.Services
             return file;
         }
 
-        public async Task<MediaDto> ReplaceFile(MediaDto file, Stream postedFile)
+        /// <summary>
+        /// Replaces a files content and takes a snapshot if take snapshots is enabled
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="postedFile"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> ReplaceFile(BlobDto file, Stream postedFile)
         {
             CloudBlockBlob blob = await GetBlob(file.StoragePath);
             if (_mediaConfig.TakeSnapshots)
@@ -329,6 +401,11 @@ namespace Azure.BlobFileManager.Services
             return file;
         }
 
+        /// <summary>
+        /// Gets a files bytes from azure storage
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public async Task<byte[]> GetFileBytes(string path)
         {
             CloudBlockBlob blob = await GetBlob(path);
@@ -342,7 +419,13 @@ namespace Azure.BlobFileManager.Services
             return myByteArray;
         }
 
-        public async Task<MediaDto> MoveFolder(MediaDto folder, string path)
+        /// <summary>
+        /// Moves a folder with its contents to the path given
+        /// </summary>
+        /// <param name="folder"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> MoveFolder(BlobDto folder, string path)
         {
             var container = await GetContainer();
 
@@ -382,7 +465,13 @@ namespace Azure.BlobFileManager.Services
             return folder;
         }
 
-        public async Task<MediaDto> MoveFile(MediaDto file, string path)
+        /// <summary>
+        /// Updates the given files path to the new path specified
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public async Task<BlobDto> MoveFile(BlobDto file, string path)
         {
             string newPath = $"{path}{file.Name}";
             file.StoragePath = newPath;
@@ -393,20 +482,24 @@ namespace Azure.BlobFileManager.Services
             return file;
         }
 
+        /// <summary>
+        /// Gets a summary of the current users number of files, space used and size limit
+        /// </summary>
+        /// <returns></returns>
         public async Task<SummaryInfo> GetSummaryInfo()
         {
             var container = await GetContainer();
-            var folders = new List<MediaDto>();
-            var files = new List<MediaDto>();
+            var folders = new List<BlobDto>();
+            var files = new List<BlobDto>();
 
             foreach (var listBlobItem in await container.ListBlobsAsync())
             {
                 if (IsCloudDirectory(listBlobItem))
                 {
                     CloudBlobDirectory blob = (CloudBlobDirectory)listBlobItem;
-                    folders.Add(new MediaDto
+                    folders.Add(new BlobDto
                     {
-                        FileType = FileType.Folder,
+                        BlobType = BlobType.Folder,
                         StoragePath = blob.Uri.ToString()
                     });
                 }
@@ -416,14 +509,14 @@ namespace Azure.BlobFileManager.Services
                     CloudBlob blob = (CloudBlob)listBlobItem;
 
                     await blob.FetchAttributesAsync();
-                    files.Add(new MediaDto
+                    files.Add(new BlobDto
                     {
                         ContentType = blob.Properties.ContentType,
                         DateModified = blob.Properties.LastModified,
                         DateCreated = blob.GetDateCreated(),
                         FileSize = blob.Properties.Length,
                         Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                        FileType = FileType.File,
+                        BlobType = BlobType.File,
                         StoragePath = listBlobItem.Uri.ToString(),
                         Path = blob.Name
                     });
@@ -439,6 +532,11 @@ namespace Azure.BlobFileManager.Services
             };
         }
 
+        /// <summary>
+        /// Indicates if the file exists for any given path
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public async Task<bool> FileExists(string path)
         {
             if (string.IsNullOrEmpty(path))

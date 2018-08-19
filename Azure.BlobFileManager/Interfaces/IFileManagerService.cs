@@ -10,22 +10,22 @@ namespace Azure.BlobFileManager.Interfaces
     public interface IFileManagerService
     {
         Task<string> AddFolder(string path, string newFolder);
-        Task<MediaDto> GetFile(string path);
-        Task<MediaDto> GetFolder(string path);
-        MediaDto GetRootFolder();
+        Task<BlobDto> GetFile(string path);
+        Task<BlobDto> GetFolder(string path);
+        BlobDto GetRootFolder();
         Task<bool> FileExists(string path);
-        Task<List<MediaDto>> DeleteFile(string path);
-        Task<MediaDto> AddFile(string path, string contentType, string name, byte[] file);
-        Task<IEnumerable<MediaDto>> GetFolderFiles(string path);
-        Task<IEnumerable<MediaDto>> GetChildFolders(string path);
-        bool IsFolder(MediaDto item);
-        bool IsFile(MediaDto item);
-        Task<MediaDto> RenameFolder(MediaDto folder, string newName);
-        Task<MediaDto> RenameFile(MediaDto file, string newName);
-        Task<MediaDto> ReplaceFile(MediaDto file, Stream postedFile);
+        Task<List<BlobDto>> DeleteFile(string path);
+        Task<BlobDto> AddFile(string path, string contentType, string name, byte[] file);
+        Task<IEnumerable<BlobDto>> GetFolderFiles(string path);
+        Task<IEnumerable<BlobDto>> GetChildFolders(string path);
+        bool IsFolder(BlobDto item);
+        bool IsFile(BlobDto item);
+        Task<BlobDto> RenameFolder(BlobDto folder, string newName);
+        Task<BlobDto> RenameFile(BlobDto file, string newName);
+        Task<BlobDto> ReplaceFile(BlobDto file, Stream postedFile);
         Task<byte[]> GetFileBytes(string path);
-        Task<MediaDto> MoveFolder(MediaDto folder, string path);
-        Task<MediaDto> MoveFile(MediaDto file, string path);
+        Task<BlobDto> MoveFolder(BlobDto folder, string path);
+        Task<BlobDto> MoveFile(BlobDto file, string path);
         Task<SummaryInfo> GetSummaryInfo();
         Task<CloudBlobContainer> GetContainer();
     }

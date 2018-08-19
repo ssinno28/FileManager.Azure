@@ -157,10 +157,10 @@ namespace Azure.BlobFileManager.Tests
                 Assert.IsTrue(await _fileManagerService.FileExists(path));
             }
 
-            await _fileManagerService.RenameFolder(new MediaDto
+            await _fileManagerService.RenameFolder(new BlobDto
             {
                 Path = "temp/",
-                FileType = FileType.Folder,
+                BlobType = BlobType.Folder,
                 Name = "temp"
             }, "temp2");
 
@@ -184,10 +184,10 @@ namespace Azure.BlobFileManager.Tests
                 Assert.IsTrue(await _fileManagerService.FileExists(path));
             }
 
-            await _fileManagerService.MoveFolder(new MediaDto
+            await _fileManagerService.MoveFolder(new BlobDto
             {
                 Path = "temp/",
-                FileType = FileType.Folder,
+                BlobType = BlobType.Folder,
                 Name = "temp"
             }, "temp2/");
 
