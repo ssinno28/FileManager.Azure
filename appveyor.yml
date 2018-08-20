@@ -25,7 +25,7 @@ before_build:
   - dotnet restore
 
 test_script:
-      - cmd: nunit3-console Azure.BlobFileManager.Tests\bin\Release\Azure.BlobFileManager.Tests.dll --result=nunit-results.xml;format=AppVeyor
+      - cmd: nunit3-console Azure.BlobFileManager.Tests\bin\Release\netcoreapp2.1\Azure.BlobFileManager.Tests.dll --result=nunit-results.xml;format=AppVeyor
       
 after_test:
   - ps: |
