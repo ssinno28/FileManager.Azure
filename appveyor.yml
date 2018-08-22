@@ -22,7 +22,7 @@ before_build:
   - dotnet restore
   
 after_test:
-  - dotnet pack --no-build --configuration $(configuration) --no-restore
+  - dotnet pack --no-build --no-restore
 
 test:
   # only assemblies to test
