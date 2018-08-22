@@ -14,7 +14,7 @@
   
   <PropertyGroup>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <NuspecFile>Azure.BlobFileManager.nuspec</NuspecFile>
+    <NuspecFile>FileManager.Azure.nuspec</NuspecFile>
     <IntermediatePackDir>$(MSBuildProjectDirectory)/bin/$(Configuration)/</IntermediatePackDir>
     <PublishDir>$(IntermediatePackDir)$(TargetFramework)/</PublishDir>
     <NuspecProperties>publishDir=$([MSBuild]::NormalizeDirectory($(IntermediatePackDir)))</NuspecProperties>
