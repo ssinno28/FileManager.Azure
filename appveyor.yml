@@ -17,10 +17,12 @@ configuration: Release
       
 build:
   project: FileManager.Azure.sln      # path to Visual Studio solution or project
-  publish_nuget: true
   
 before_build:
   - dotnet restore
+  
+after_test:
+  - dotnet pack
 
 test:
   # only assemblies to test
