@@ -16,14 +16,13 @@ install:
 configuration: Release
       
 build:
-  parallel: true                          # enable MSBuild parallel builds
   project: Azure.BlobFileManager.sln      # path to Visual Studio solution or project
-  publish_nuget: true                     # package projects with .nuspec files and push to artifacts
-  publish_nuget_symbols: true             # generate and publish NuGet symbol packages
-  publish_aspnet_core: true
   
 before_build:
   - dotnet restore
+  
+after_test:
+  - dotnet pack
 
 test:
   # only assemblies to test
