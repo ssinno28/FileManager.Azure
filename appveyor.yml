@@ -38,3 +38,10 @@ artifacts:
 
   # pushing all *.nupkg files in build directory recursively
   - path: '**\*.nupkg'
+
+deploy:
+- provider: NuGet
+  api_key:
+    secure: uiY2o7+IOz9OareLUDrYZHl+NikMs4CByEULjypZ1mSlqfBW6/3hK7yXn54gD0AC
+  on:
+    branch: master
