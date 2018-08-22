@@ -17,6 +17,7 @@ configuration: Release
       
 build:
   project: FileManager.Azure.sln      # path to Visual Studio solution or project
+  publish_nuget: true
   
 before_build:
   - dotnet restore
