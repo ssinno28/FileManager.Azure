@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 
-namespace Azure.BlobFileManager.Helpers
+namespace FileManager.Azure.Helpers
 {
     public static class StorageEmulator
     {

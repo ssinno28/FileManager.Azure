@@ -16,19 +16,16 @@ install:
 configuration: Release
       
 build:
-  project: Azure.BlobFileManager.sln      # path to Visual Studio solution or project
+  project: FileManager.Azure.sln      # path to Visual Studio solution or project
   
 before_build:
   - dotnet restore
-  
-after_test:
-  - dotnet pack
 
 test:
   # only assemblies to test
   assemblies:
     only:
-      - Azure.BlobFileManager.Tests.dll
+      - FileManager.Azure.Tests.dll
       
 #---------------------------------#
 #      artifacts configuration    #

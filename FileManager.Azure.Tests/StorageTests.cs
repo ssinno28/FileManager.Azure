@@ -5,19 +5,19 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
-using Azure.BlobFileManager.Dictionary;
-using Azure.BlobFileManager.Dtos;
-using Azure.BlobFileManager.Helpers;
-using Azure.BlobFileManager.Interfaces;
-using Azure.BlobFileManager.Models;
-using Azure.BlobFileManager.Services;
+using FileManager.Azure.Dictionary;
+using FileManager.Azure.Dtos;
+using FileManager.Azure.Helpers;
+using FileManager.Azure.Interfaces;
+using FileManager.Azure.Models;
+using FileManager.Azure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using NUnit.Framework;
 
-namespace Azure.BlobFileManager.Tests
+namespace FileManager.Azure.Tests
 {
     [TestFixture]
     public class StorageTests

@@ -2,7 +2,7 @@
 using System.Reflection;
 using Microsoft.WindowsAzure.Storage.Blob;
 
-namespace Azure.BlobFileManager.Helpers
+namespace FileManager.Azure.Helpers
 {
     public static class BlobHelpers
     {

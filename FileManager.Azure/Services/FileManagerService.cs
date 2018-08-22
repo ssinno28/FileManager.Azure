@@ -7,19 +7,18 @@ using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-using Azure.BlobFileManager.Dictionary;
-using Azure.BlobFileManager.Dtos;
-using Azure.BlobFileManager.Helpers;
-using Azure.BlobFileManager.Interfaces;
-using Azure.BlobFileManager.Models;
+using FileManager.Azure.Dtos;
+using FileManager.Azure.Helpers;
+using FileManager.Azure.Interfaces;
+using FileManager.Azure.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.DataMovement;
-using BlobType = Azure.BlobFileManager.Dictionary.BlobType;
+using BlobType = FileManager.Azure.Dictionary.BlobType;
 
-namespace Azure.BlobFileManager.Services
+namespace FileManager.Azure.Services
 {
     public class FileManagerService : IFileManagerService
     {

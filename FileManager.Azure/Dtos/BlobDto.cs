@@ -1,7 +1,7 @@
 ﻿using System;
-using Azure.BlobFileManager.Dictionary;
+using FileManager.Azure.Dictionary;
 
-namespace Azure.BlobFileManager.Dtos
+namespace FileManager.Azure.Dtos
 {
     public class BlobDto
     {

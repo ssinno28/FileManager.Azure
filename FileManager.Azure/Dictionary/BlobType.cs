@@ -1,4 +1,4 @@
-﻿namespace Azure.BlobFileManager.Dictionary
+﻿namespace FileManager.Azure.Dictionary
 {
     public enum BlobType
     {

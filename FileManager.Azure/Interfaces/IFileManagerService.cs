@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Azure.BlobFileManager.Dtos;
-using Azure.BlobFileManager.Models;
+using FileManager.Azure.Dtos;
+using FileManager.Azure.Models;
 using Microsoft.WindowsAzure.Storage.Blob;
 
-namespace Azure.BlobFileManager.Interfaces
+namespace FileManager.Azure.Interfaces
 {
     public interface IFileManagerService
     {

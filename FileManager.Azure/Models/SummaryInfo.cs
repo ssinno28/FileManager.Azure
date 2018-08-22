@@ -1,4 +1,4 @@
-﻿namespace Azure.BlobFileManager.Models
+﻿namespace FileManager.Azure.Models
 {
     public class SummaryInfo
     {

@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Blob;
 
-namespace Azure.BlobFileManager.Helpers
+namespace FileManager.Azure.Helpers
 {
     public static class BlobDirectoryHelpers
     {

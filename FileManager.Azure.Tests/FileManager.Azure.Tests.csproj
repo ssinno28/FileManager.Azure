@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Azure.BlobFileManager\Azure.BlobFileManager.csproj" />
+    <ProjectReference Include="..\FileManager.Azure\FileManager.Azure.csproj" />
   </ItemGroup>
 
 </Project>
