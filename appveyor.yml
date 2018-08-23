@@ -22,7 +22,7 @@ before_build:
   - dotnet restore
   
 after_test:
-  - dotnet pack --configuration=$($env:CONFIGURATION) /p:PackageVersion=$($env:APPVEYOR_BUILD_NUMBER)
+  - ps: dotnet pack --configuration=$($env:CONFIGURATION) /p:PackageVersion=$($env:APPVEYOR_BUILD_NUMBER)
 
 test:
   # only assemblies to test
