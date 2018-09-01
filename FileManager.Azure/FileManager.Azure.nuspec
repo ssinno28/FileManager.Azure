@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>FileManager.Azure</id>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <authors>Sammi Sinno</authors>
     <description>A service that treats azure blog storage as a traditional file system and helps to create paths based on directory references for organization purposes.</description>
   </metadata>
