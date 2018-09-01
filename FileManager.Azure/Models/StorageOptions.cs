@@ -1,6 +1,6 @@
 ﻿namespace FileManager.Azure.Models
 {
-    public class MediaConfig
+    public class StorageOptions
     {
         public string StorageConnStr { get; set; }
         public bool TakeSnapshots { get; set; }

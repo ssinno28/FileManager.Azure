@@ -43,8 +43,8 @@ namespace FileManager.Azure.Tests
             var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
             httpContextAccessorMock.SetupGet(x => x.HttpContext.User).Returns(() => principal);
 
-            var configMock = new Mock<IOptions<MediaConfig>>();
-            configMock.SetupGet(x => x.Value).Returns(() => new MediaConfig
+            var configMock = new Mock<IOptions<StorageOptions>>();
+            configMock.SetupGet(x => x.Value).Returns(() => new StorageOptions
             {
                 StorageConnStr = "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1"
             });

@@ -23,13 +23,13 @@ namespace FileManager.Azure.Services
     public class FileManagerService : IFileManagerService
     {
         private const string ContainerName = "filemanager";
-        private readonly MediaConfig _mediaConfig;
+        private readonly StorageOptions _storageOptions;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public FileManagerService(IOptions<MediaConfig> mediaConfig, IHttpContextAccessor httpContextAccessor)
+        public FileManagerService(IOptions<StorageOptions> mediaConfig, IHttpContextAccessor httpContextAccessor)
         {
             _httpContextAccessor = httpContextAccessor;
-            _mediaConfig = mediaConfig.Value;
+            _storageOptions = mediaConfig.Value;
         }
 
         /// <summary>
@@ -117,7 +117,11 @@ namespace FileManager.Azure.Services
             List<BlobDto> deletedFiles = new List<BlobDto>();
             if (Path.HasExtension(path))
             {
-                CloudBlob blob = await GetBlob(path);
+                CloudBlockBlob blob = await GetBlob(path);
+                if (_storageOptions.TakeSnapshots)
+                {
+                    await blob.CreateSnapshotAsync();
+                }
 
                 await blob.FetchAttributesAsync();
                 deletedFiles.Add(new BlobDto
@@ -386,7 +390,7 @@ namespace FileManager.Azure.Services
         public async Task<BlobDto> ReplaceFile(BlobDto file, Stream postedFile)
         {
             CloudBlockBlob blob = await GetBlob(file.StoragePath);
-            if (_mediaConfig.TakeSnapshots)
+            if (_storageOptions.TakeSnapshots)
             {
                 await blob.CreateSnapshotAsync();
             }
@@ -589,7 +593,7 @@ namespace FileManager.Azure.Services
 
         private CloudBlobClient GetClient()
         {
-            return CloudStorageAccount.Parse(_mediaConfig.StorageConnStr).CreateCloudBlobClient();
+            return CloudStorageAccount.Parse(_storageOptions.StorageConnStr).CreateCloudBlobClient();
         }
 
         private async Task<CloudBlockBlob> GetBlob(string path)
