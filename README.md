@@ -4,11 +4,11 @@
 
 `Install-Package FileManager.Azure`
 
-A service that treats azure blog storage as a traditional file system and helps to create paths based on directory references for organizational purposes.
+A service that provides all necessary functionality to maintain your azure storage account as well as helps to create hierarchical paths for organizational purposes.
 
 There are a few claims (that currently have defaults), that will be useful when trying to restrict access to certain paths:
 
- * BlobContainer - default is filemanager
+* BlobContainer - default is filemanager
 * RootFolder - default is "/"
 * BlobContainerSizeLimit - default is 500TB^2
 

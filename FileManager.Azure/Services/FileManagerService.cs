@@ -12,10 +12,10 @@ using FileManager.Azure.Helpers;
 using FileManager.Azure.Interfaces;
 using FileManager.Azure.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.Blob;
+using Microsoft.Azure.Storage.DataMovement;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.DataMovement;
 using BlobType = FileManager.Azure.Dictionary.BlobType;
 
 namespace FileManager.Azure.Services
@@ -72,7 +72,7 @@ namespace FileManager.Azure.Services
             {
                 ContentType = blob.Properties.ContentType,
                 DateModified = blob.Properties.LastModified,
-                DateCreated = blob.GetDateCreated(),
+                DateCreated = blob.Properties.Created,
                 FileSize = blob.Properties.Length,
                 Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
                 BlobType = BlobType.File,
@@ -128,7 +128,7 @@ namespace FileManager.Azure.Services
                 {
                     ContentType = blob.Properties.ContentType,
                     DateModified = blob.Properties.LastModified,
-                    DateCreated = blob.GetDateCreated(),
+                    DateCreated = blob.Properties.Created,
                     FileSize = blob.Properties.Length,
                     Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
                     BlobType = BlobType.File,
@@ -153,7 +153,7 @@ namespace FileManager.Azure.Services
                         {
                             ContentType = blob.Properties.ContentType,
                             DateModified = blob.Properties.LastModified,
-                            DateCreated = blob.GetDateCreated(),
+                            DateCreated = blob.Properties.Created,
                             FileSize = blob.Properties.Length,
                             Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
                             BlobType = BlobType.File,
@@ -195,7 +195,7 @@ namespace FileManager.Azure.Services
             {
                 ContentType = blob.Properties.ContentType,
                 DateModified = blob.Properties.LastModified,
-                DateCreated = blob.GetDateCreated(),
+                DateCreated = blob.Properties.Created,
                 FileSize = blob.Properties.Length,
                 Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
                 BlobType = BlobType.File,
@@ -226,7 +226,7 @@ namespace FileManager.Azure.Services
                     {
                         ContentType = blob.Properties.ContentType,
                         DateModified = blob.Properties.LastModified,
-                        DateCreated = blob.GetDateCreated(),
+                        DateCreated = blob.Properties.Created,
                         FileSize = blob.Properties.Length,
                         Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
                         BlobType = BlobType.File,
@@ -516,7 +516,7 @@ namespace FileManager.Azure.Services
                     {
                         ContentType = blob.Properties.ContentType,
                         DateModified = blob.Properties.LastModified,
-                        DateCreated = blob.GetDateCreated(),
+                        DateCreated = blob.Properties.Created,
                         FileSize = blob.Properties.Length,
                         Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
                         BlobType = BlobType.File,

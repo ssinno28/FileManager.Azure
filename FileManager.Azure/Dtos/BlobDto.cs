@@ -8,7 +8,7 @@ namespace FileManager.Azure.Dtos
         public string Name { get; set; }
         public string ContentType { get; set; }
         public string StoragePath { get; set; }
-        public DateTime DateCreated { get; set; }
+        public DateTimeOffset? DateCreated { get; set; }
         public DateTimeOffset? DateModified { get; set; }
         public long FileSize { get; set; }
         public BlobType BlobType { get; set; }

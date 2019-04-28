@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.Azure.Storage.Blob;
 
 namespace FileManager.Azure.Helpers
 {
@@ -14,9 +14,7 @@ namespace FileManager.Azure.Helpers
 
         public static DateTime GetDateCreated(this CloudBlob blob)
         {
-            string dateCreated;
-            DateTime dateCreatedDt;
-            if (blob.Metadata.TryGetValue("DateCreated", out dateCreated) && DateTime.TryParse(dateCreated, out dateCreatedDt))
+            if (blob.Metadata.TryGetValue("DateCreated", out var dateCreated) && DateTime.TryParse(dateCreated, out var dateCreatedDt))
             {
                 return dateCreatedDt;
             }

@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using FileManager.Azure.Dtos;
 using FileManager.Azure.Models;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.Azure.Storage.Blob;
 
 namespace FileManager.Azure.Interfaces
 {
