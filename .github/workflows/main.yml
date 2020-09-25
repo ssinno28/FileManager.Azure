@@ -1,0 +1,29 @@
+name: CI
+
+on: 
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v
+      
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.2.x'
+    
+    - name: Install Storage Emulator
+      run: |
+          $msiPath = "$($env:USERPROFILE)\MicrosoftAzureStorageEmulator.msi"
+          (New-Object Net.WebClient).DownloadFile('https://download.microsoft.com/download/B/4/A/B4A8422F-C564-4393-80DA-6865A8C4B32D/MicrosoftAzureStorageEmulator.msi', $msiPath)
+          cmd /c start /wait msiexec /i $msiPath /quiet
+          
+    - name: Build and Test Project
+      run: dotnet build FileManager.Azure.sln
+      run: dotnet test FileManager.Azure.sln
