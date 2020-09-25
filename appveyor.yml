@@ -14,12 +14,12 @@ install:
       
 # build Configuration, i.e. Debug, Release, etc.
 configuration: Release
+
+before_build:
+  - dotnet restore
       
 build:
   project: FileManager.Azure.sln      # path to Visual Studio solution or project
-  
-before_build:
-  - dotnet restore
   
 after_test:
   - ps: dotnet pack --configuration=$($env:CONFIGURATION) /p:PackageVersion=$($env:APPVEYOR_BUILD_NUMBER)
