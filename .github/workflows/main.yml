@@ -12,12 +12,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v
+      uses: actions/checkout@v2
       
     - name: Setup Dotnet
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '2.2.103'
+        dotnet-version: '2.2.x'
     
     - name: Install Storage Emulator
       run: |
