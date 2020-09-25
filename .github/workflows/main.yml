@@ -22,9 +22,12 @@ jobs:
     - name: Install Storage Emulator
       run: |
           $msiPath = "$($env:USERPROFILE)\MicrosoftAzureStorageEmulator.msi"
-          (New-Object Net.WebClient).DownloadFile('https://download.microsoft.com/download/B/4/A/B4A8422F-C564-4393-80DA-6865A8C4B32D/MicrosoftAzureStorageEmulator.msi', $msiPath)
+          (New-Object Net.WebClient).DownloadFile('https://go.microsoft.com/fwlink/?linkid=717179&clcid=0x409', $msiPath)
           cmd /c start /wait msiexec /i $msiPath /quiet
           
+    - name: Restore Solution
+      run: dotnet restore FileManager.Azure.sln
+      
     - name: Build Solution
       run: dotnet build FileManager.Azure.sln  
       
