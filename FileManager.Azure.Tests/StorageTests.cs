@@ -78,6 +78,21 @@ namespace FileManager.Azure.Tests
 
             await _fileManagerService.AddFile(path, "application/pdf", name, uploadedBytes);
             Assert.IsTrue(await _fileManagerService.FileExists(path));
+        }        
+        
+        [Test]
+        public async Task Test_Get_File()
+        {
+            string tempFile = CreateTempFile();
+            var uploadedBytes = File.ReadAllBytes(tempFile);
+            
+            string name = Path.GetFileNameWithoutExtension(tempFile);
+            string path = $"/temp/{name}.tmp";
+
+            await _fileManagerService.AddFile(path, "application/pdf", name, uploadedBytes);
+
+            var fileBlob = await _fileManagerService.GetFile(path);
+            Assert.NotNull(fileBlob);
         }
 
         [Test]
@@ -94,6 +109,49 @@ namespace FileManager.Azure.Tests
 
             await _fileManagerService.DeleteFile(path);
             Assert.IsFalse(await _fileManagerService.FileExists(path));
+        }        
+        
+        [Test]
+        public async Task Test_Rename_File()
+        {
+            string tempFile = CreateTempFile();
+            var uploadedBytes = File.ReadAllBytes(tempFile);
+            
+            string name = Path.GetFileNameWithoutExtension(tempFile);
+            string path = $"/temp/{name}.tmp";
+
+            var blobDto = await _fileManagerService.AddFile(path, "application/pdf", name, uploadedBytes);
+            Assert.IsTrue(await _fileManagerService.FileExists(path));
+
+            await _fileManagerService.RenameFile(blobDto, "my-new-name.tmp");
+
+            var renamedBlogDto = await _fileManagerService.GetFile("/temp/my-new-name.tmp");
+            Assert.NotNull(renamedBlogDto);
+        }        
+        
+        [Test]
+        public async Task Test_Move_File()
+        {
+            string tempFile = CreateTempFile();
+            var uploadedBytes = File.ReadAllBytes(tempFile);
+            
+            string name = Path.GetFileNameWithoutExtension(tempFile);
+            string path = $"/temp/{name}.tmp";
+
+            var blobDto = await _fileManagerService.AddFile(path, "application/pdf", name, uploadedBytes);
+            Assert.IsTrue(await _fileManagerService.FileExists(path));
+
+            await _fileManagerService.MoveFile(blobDto, "/temp2/");
+
+            var movedBlobDto = await _fileManagerService.GetFile($"/temp2/{name}.tmp");
+            Assert.NotNull(movedBlobDto);
+        }
+
+        [Test]
+        public async Task Test_Return_Null_If_Not_Exists()
+        {
+            var blobDto = await _fileManagerService.GetFile("doesnt-exist.tmp");
+            Assert.IsNull(blobDto);
         }
 
         [Test]

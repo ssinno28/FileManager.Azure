@@ -59,13 +59,15 @@ namespace FileManager.Azure.Services
         }
 
         /// <summary>
-        /// Gets a file for the given path
+        /// Gets a file for the given path, will return null if it doesn't exit
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
         public async Task<BlobDto> GetFile(string path)
         {
             var blob = await GetBlob(path);
+            if (!await blob.ExistsAsync()) return null;
+
             await blob.FetchAttributesAsync();
 
             return new BlobDto
@@ -367,16 +369,16 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<BlobDto> RenameFile(BlobDto file, string newName)
         {
-            string oldPath = file.StoragePath;
-            string newPath = oldPath.Replace(file.Name, newName);
+            string oldPath = file.Path;
+            string newPath = oldPath.Replace($"{file.Name}{Path.GetExtension(file.Path)}", newName);
 
             var blob = await UpdateFilePath(oldPath, newPath);
 
-            blob.Metadata.Add("FileName", newName);
+            blob.Metadata.Add("FileName", Path.GetFileNameWithoutExtension(newName));
             await blob.SetMetadataAsync();
 
             file.Name = newName;
-            file.StoragePath = newPath;
+            file.StoragePath = blob.Uri.ToString();
 
             return file;
         }
@@ -389,7 +391,7 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<BlobDto> ReplaceFile(BlobDto file, Stream postedFile)
         {
-            CloudBlockBlob blob = await GetBlob(file.StoragePath);
+            CloudBlockBlob blob = await GetBlob(file.Path);
             if (_storageOptions.TakeSnapshots)
             {
                 await blob.CreateSnapshotAsync();
@@ -469,18 +471,17 @@ namespace FileManager.Azure.Services
         }
 
         /// <summary>
-        /// Updates the given files path to the new path specified
+        /// Updates the given files path to the new path specified, path should have leading and trailing forward slashes (ex /temp/)
         /// </summary>
         /// <param name="file"></param>
         /// <param name="path"></param>
         /// <returns></returns>
         public async Task<BlobDto> MoveFile(BlobDto file, string path)
         {
-            string newPath = $"{path}{file.Name}";
-            file.StoragePath = newPath;
+            string newPath = $"{path}{file.Name}{Path.GetExtension(file.Path)}";
             file.DateModified = DateTime.UtcNow;
 
-            await UpdateFilePath(file.StoragePath, newPath);
+            await UpdateFilePath(file.Path, newPath);
 
             return file;
         }
