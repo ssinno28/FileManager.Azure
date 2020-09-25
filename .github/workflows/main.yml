@@ -37,5 +37,5 @@ jobs:
     - name: Publish FileManager.Azure
       uses: rohith/publish-nuget@v2
       with:
-          PROJECT_FILE_PATH: src/FileManager.Azure/FileManager.Azure.csproj
+          PROJECT_FILE_PATH: FileManager.Azure/FileManager.Azure.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
