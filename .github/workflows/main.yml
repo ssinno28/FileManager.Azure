@@ -24,6 +24,8 @@ jobs:
           (New-Object Net.WebClient).DownloadFile('https://download.microsoft.com/download/B/4/A/B4A8422F-C564-4393-80DA-6865A8C4B32D/MicrosoftAzureStorageEmulator.msi', $msiPath)
           cmd /c start /wait msiexec /i $msiPath /quiet
           
-    - name: Build and Test Project
-      run: dotnet build FileManager.Azure.sln
+    - name: Build Solution
+      run: dotnet build FileManager.Azure.sln  
+      
+    - name: Test Solution
       run: dotnet test FileManager.Azure.sln
