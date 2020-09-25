@@ -16,7 +16,7 @@ install:
 configuration: Release
 
 before_build:
-  - dotnet restore
+  - nuget restore
       
 build:
   project: FileManager.Azure.sln      # path to Visual Studio solution or project
