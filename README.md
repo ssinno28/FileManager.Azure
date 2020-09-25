@@ -1,6 +1,6 @@
 # FileManager.Azure
 
-[![Build status](https://ci.appveyor.com/api/projects/status/r46wrckv1gnaw8vg/branch/master?svg=true)](https://ci.appveyor.com/project/ssinno28/azure-blobfilemanager/branch/master)
+![CI](https://github.com/ssinno28/FileManager.Azure/workflows/CI/badge.svg)
 
 `Install-Package FileManager.Azure`
 
