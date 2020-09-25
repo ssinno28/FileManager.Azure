@@ -40,3 +40,4 @@ jobs:
           PROJECT_FILE_PATH: FileManager.Azure/FileManager.Azure.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
           VERSION_FILE_PATH: FileManager.Azure/FileManager.Azure.nuspec
+          VERSION_REGEX: <version>(.*)<\/version>
