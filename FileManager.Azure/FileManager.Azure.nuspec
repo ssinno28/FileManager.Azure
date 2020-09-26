@@ -5,5 +5,6 @@
     <version>1.0.8</version>
     <authors>Sammi Sinno</authors>
     <description>A service that provides all necessary functionality to maintain your azure storage account as well as helps to create hierarchical paths for organizational purposes.</description>
+    <repository type="git" url="https://github.com/ssinno28/FileManager.Azure" />
   </metadata>
 </package>
