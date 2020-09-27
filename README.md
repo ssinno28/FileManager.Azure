@@ -4,7 +4,11 @@
 
 `Install-Package FileManager.Azure`
 
-A service that provides all necessary functionality to maintain your azure storage account as well as helps to create hierarchical paths for organizational purposes.
+A service that provides all necessary functionality to maintain your azure storage account as well as helps to create hierarchical paths for organizational purposes. You will need to add the file manager service via DI:
+
+```
+  services.AddScoped<IFileManagerService, FileManagerService>();  
+```
 
 There are a few claims (that currently have defaults), that will be useful when trying to restrict access to certain paths:
 
