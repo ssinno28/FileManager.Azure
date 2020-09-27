@@ -11,4 +11,12 @@
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <Version>1.0.10</Version>
+    <RepositoryUrl>https://github.com/ssinno28/FileManager.Azure</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Description>A service that provides all necessary functionality to maintain your azure storage account as well as helps to create hierarchical paths for organizational purposes.</Description>
+    <Authors>Sammi Sinno</Authors>
+  </PropertyGroup>
+
 </Project>
