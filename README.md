@@ -6,7 +6,7 @@
 
 A service that provides all necessary functionality to maintain your azure storage account as well as helps to create hierarchical paths for organizational purposes. You will need to add the file manager service via DI:
 
-```
+```c#
   services.AddScoped<IFileManagerService, FileManagerService>();  
 ```
 
