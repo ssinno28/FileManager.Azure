@@ -12,6 +12,8 @@ There are a few claims (that currently have defaults), that will be useful when 
 * RootFolder - default is "/"
 * BlobContainerSizeLimit - default is 500TB^2
 
+The idea of having the container name as a claim is that each authenticated user could be assigned their own container for storing objects. 
+
 This package comes with an options object that should be wired up at startup like so:
 
 ```c#
