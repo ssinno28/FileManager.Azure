@@ -12,6 +12,9 @@ using FileManager.Azure.Interfaces;
 using FileManager.Azure.Models;
 using FileManager.Azure.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -49,7 +52,16 @@ namespace FileManager.Azure.Tests
                 StorageConnStr = "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1"
             });
 
-            _fileManagerService = new FileManagerService(configMock.Object, httpContextAccessorMock.Object);
+            var builder = new ConfigurationBuilder();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddFileManager(builder.Build());
+            serviceCollection.Add(new ServiceDescriptor(typeof(IHttpContextAccessor), httpContextAccessorMock.Object));
+            serviceCollection.Add(new ServiceDescriptor(typeof(IOptions<StorageOptions>), configMock.Object));
+
+            var provider = serviceCollection.BuildServiceProvider();
+
+            _fileManagerService = provider.GetService<Func<string, IFileManagerService>>()("test-container");
         }
 
         [TearDown]

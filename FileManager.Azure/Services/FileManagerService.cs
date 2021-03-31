@@ -22,13 +22,14 @@ namespace FileManager.Azure.Services
 {
     public class FileManagerService : IFileManagerService
     {
-        private const string ContainerName = "filemanager";
         private readonly StorageOptions _storageOptions;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly string _container;
 
-        public FileManagerService(IOptions<StorageOptions> mediaConfig, IHttpContextAccessor httpContextAccessor)
+        public FileManagerService(IOptions<StorageOptions> mediaConfig, IHttpContextAccessor httpContextAccessor, string container)
         {
             _httpContextAccessor = httpContextAccessor;
+            _container = container;
             _storageOptions = mediaConfig.Value;
         }
 
@@ -578,7 +579,20 @@ namespace FileManager.Azure.Services
         public async Task<CloudBlobContainer> GetContainer()
         {
             var client = GetClient();
-            var container = client.GetContainerReference(GetBlobContainerName());
+            var container = client.GetContainerReference(_container);
+
+            if (!await container.ExistsAsync())
+            {
+                await container.CreateAsync();
+
+                // set access level to "blob", which means user can access the blob 
+                // but not look through the whole container
+                // this means the user must have a URL to the blob to access it
+                BlobContainerPermissions permissions = new BlobContainerPermissions();
+                permissions.PublicAccess = BlobContainerPublicAccessType.Blob;
+                await container.SetPermissionsAsync(permissions);
+            }
+
             return container;
         }
 
@@ -608,20 +622,6 @@ namespace FileManager.Azure.Services
         {
             return item.GetType() == typeof(CloudBlobDirectory) ||
                    item.GetType().GetTypeInfo().BaseType == typeof(CloudBlobDirectory);
-        }
-
-        private string GetBlobContainerName()
-        {
-            Claim containerClaim =
-                _httpContextAccessor.HttpContext?.User.FindFirst("BlobContainer");
-
-            string name = containerClaim == null ? ContainerName : containerClaim.Value;
-            if (name.Length < 3 || name.Length > 63 || !Regex.IsMatch(name, @"^[a-z0-9]+(-[a-z0-9]+)*$"))
-            {
-                throw new Exception("Container name is not valid!!");
-            }
-
-            return name;
         }
 
         private long GetContainerSizeLimit()
