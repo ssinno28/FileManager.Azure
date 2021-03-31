@@ -89,7 +89,7 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public BlobDto GetRootFolder()
         {
-            Claim rootFolderClaim = _httpContextAccessor.HttpContext.User.FindFirst("RootFolder");
+            Claim rootFolderClaim = _httpContextAccessor.HttpContext?.User.FindFirst("RootFolder");
             if (rootFolderClaim == null)
             {
                 return new BlobDto
@@ -623,7 +623,7 @@ namespace FileManager.Azure.Services
         private string GetBlobContainerName()
         {
             Claim containerClaim =
-                _httpContextAccessor.HttpContext.User.FindFirst("BlobContainer");
+                _httpContextAccessor.HttpContext?.User.FindFirst("BlobContainer");
 
             string name = containerClaim == null ? ContainerName : containerClaim.Value;
             if (name.Length < 3 || name.Length > 63 || !Regex.IsMatch(name, @"^[a-z0-9]+(-[a-z0-9]+)*$"))
@@ -637,7 +637,7 @@ namespace FileManager.Azure.Services
         private long GetContainerSizeLimit()
         {
             Claim sizeLimitClaim =
-                _httpContextAccessor.HttpContext.User.FindFirst("BlobContainerSizeLimit");
+                _httpContextAccessor.HttpContext?.User.FindFirst("BlobContainerSizeLimit");
 
             long maxLimit = (long)2.5e+17;
             long limit = sizeLimitClaim == null ? (long)2.5e+17 : Convert.ToInt64(sizeLimitClaim.Value);
