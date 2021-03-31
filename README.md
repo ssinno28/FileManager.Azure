@@ -7,22 +7,24 @@
 A service that provides all necessary functionality to maintain your azure storage account as well as helps to create hierarchical paths for organizational purposes. You will need to add the file manager service via DI:
 
 ```c#
-  services.AddScoped<IFileManagerService, FileManagerService>();  
+  services.AddFileManager(Configuration);  
 ```
 
 There are a few claims (that currently have defaults), that will be useful when trying to restrict access to certain paths:
 
-* BlobContainer - default is filemanager
 * RootFolder - default is "/"
 * BlobContainerSizeLimit - default is 500TB^2
 
-The idea of having the container name as a claim is that each authenticated user could be assigned their own container for storing objects. 
+The FileManager gets injected as a Func, since every instance could be working with a separate container:
 
-This package comes with an options object that should be wired up at startup like so:
+```c# 
+private readonly Func<string, IFileManager> _fileManagerFactory:
 
-```c#
- services.AddOptions();
- services.Configure<StorageOptions>(Configuration);
+public TestClass(Func<string, IFileManager> fileManagerFactory) {
+	_fileManagerFactory = fileManagerFactory;
+	
+	var fileManager = _fileManagerFactory("myContainerName");
+}
 ```
 
-There are two properties you'll have to configure, first and most importantly is the `StorageConnStr` property and the other is a boolean property called `TakeSnapshots`. If TakeSnapshots is set to true then it will take a snapshot of a file whenever it is either replaced or deleted.
+Make sure to add two settings to the appsettings.json file. First and most importantly is the `StorageConnStr` property and the other is a boolean property called `TakeSnapshots`. If TakeSnapshots is set to true then it will take a snapshot of a file whenever it is either replaced or deleted.
