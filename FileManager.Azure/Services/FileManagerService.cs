@@ -579,16 +579,6 @@ namespace FileManager.Azure.Services
         {
             var client = GetClient();
             var container = client.GetContainerReference(GetBlobContainerName());
-
-            await container.CreateIfNotExistsAsync();
-
-            // set access level to "blob", which means user can access the blob 
-            // but not look through the whole container
-            // this means the user must have a URL to the blob to access it
-            BlobContainerPermissions permissions = new BlobContainerPermissions();
-            permissions.PublicAccess = BlobContainerPublicAccessType.Blob;
-            await container.SetPermissionsAsync(permissions);
-
             return container;
         }
 
