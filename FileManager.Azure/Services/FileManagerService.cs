@@ -2,21 +2,17 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using FileManager.Azure.Dictionary;
 using FileManager.Azure.Dtos;
-using FileManager.Azure.Helpers;
 using FileManager.Azure.Interfaces;
 using FileManager.Azure.Models;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Blob;
-using Microsoft.Azure.Storage.DataMovement;
 using Microsoft.Extensions.Options;
-using BlobType = FileManager.Azure.Dictionary.BlobType;
 
 namespace FileManager.Azure.Services
 {
@@ -41,13 +37,10 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<string> AddFolder(string path, string newFolder)
         {
-            var container = await GetContainer();
-            CloudBlobDirectory directory = container.GetDirectoryReference($"{path}{newFolder}");
-
             string tempFile = Path.GetTempFileName();
 
             Random random = new Random();
-            var uploadedBytes = new byte[0];
+            var uploadedBytes = Array.Empty<byte>();
             random.NextBytes(uploadedBytes);
 
             File.WriteAllBytes(tempFile, uploadedBytes);
@@ -66,21 +59,22 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<BlobDto> GetFile(string path)
         {
-            var blob = await GetBlob(path);
-            if (!await blob.ExistsAsync()) return null;
+            var blobClient = await GetBlobClient(path);
+            if (!await blobClient.ExistsAsync()) return null;
 
-            await blob.FetchAttributesAsync();
+            // Get the BlobProperties
+            BlobProperties properties = await blobClient.GetPropertiesAsync();
 
             return new BlobDto
             {
-                ContentType = blob.Properties.ContentType,
-                DateModified = blob.Properties.LastModified,
-                DateCreated = blob.Properties.Created,
-                FileSize = blob.Properties.Length,
-                Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                BlobType = BlobType.File,
-                StoragePath = blob.Uri.ToString(),
-                Path = blob.Name
+                ContentType = properties.ContentType,
+                DateModified = properties.LastModified,
+                DateCreated = properties.CreatedOn,
+                FileSize = properties.ContentLength,
+                Name = HttpUtility.UrlDecode(properties.Metadata["FileName"]),
+                BlobType = AzureBlobType.File,
+                StoragePath = blobClient.Uri.ToString(),
+                Path = path
             };
         }
 
@@ -97,14 +91,14 @@ namespace FileManager.Azure.Services
                 {
                     Name = "Root",
                     StoragePath = "/",
-                    BlobType = BlobType.Folder
+                    BlobType = AzureBlobType.Folder
                 };
             }
 
             return new BlobDto
             {
                 Name = rootFolderClaim.Value,
-                BlobType = BlobType.Folder
+                BlobType = AzureBlobType.Folder
             };
         }
 
@@ -120,52 +114,48 @@ namespace FileManager.Azure.Services
             List<BlobDto> deletedFiles = new List<BlobDto>();
             if (Path.HasExtension(path))
             {
-                CloudBlockBlob blob = await GetBlob(path);
+                var blobClient = await GetBlobClient(path);
                 if (_storageOptions.TakeSnapshots)
                 {
-                    await blob.CreateSnapshotAsync();
+                    await blobClient.CreateSnapshotAsync();
                 }
 
-                await blob.FetchAttributesAsync();
+                BlobProperties properties = await blobClient.GetPropertiesAsync();
                 deletedFiles.Add(new BlobDto
                 {
-                    ContentType = blob.Properties.ContentType,
-                    DateModified = blob.Properties.LastModified,
-                    DateCreated = blob.Properties.Created,
-                    FileSize = blob.Properties.Length,
-                    Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                    BlobType = BlobType.File,
-                    StoragePath = blob.Uri.ToString(),
-                    Path = blob.Name
+                    ContentType = properties.ContentType,
+                    DateModified = properties.LastModified,
+                    DateCreated = properties.CreatedOn,
+                    FileSize = properties.ContentLength,
+                    Name = HttpUtility.UrlDecode(properties.Metadata["FileName"]),
+                    BlobType = AzureBlobType.File,
+                    StoragePath = blobClient.Uri.ToString(),
+                    Path = blobClient.Name
                 });
 
-                await blob.DeleteIfExistsAsync();
+                await blobClient.DeleteIfExistsAsync();
             }
             else
             {
-                var directory = container.GetDirectoryReference(path);
+                var blobs = container.GetBlobs(BlobTraits.All, BlobStates.All, path);
                 List<Task> tasks = new List<Task>();
-                foreach (IListBlobItem result in await directory.ListBlobsAsync())
+                foreach (var blob in blobs)
                 {
-                    if (IsCloudBlob(result))
+                    var blobClient = await GetBlobClient(blob.Name);
+
+                    deletedFiles.Add(new BlobDto
                     {
-                        CloudBlob blob = (CloudBlob)result;
+                        ContentType = blob.Properties.ContentType,
+                        DateModified = blob.Properties.LastModified,
+                        DateCreated = blob.Properties.CreatedOn,
+                        FileSize = (long)blob.Properties.ContentLength,
+                        Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
+                        BlobType = AzureBlobType.File,
+                        StoragePath = blobClient.Uri.ToString(),
+                        Path = blob.Name
+                    });
 
-                        await blob.FetchAttributesAsync();
-                        deletedFiles.Add(new BlobDto
-                        {
-                            ContentType = blob.Properties.ContentType,
-                            DateModified = blob.Properties.LastModified,
-                            DateCreated = blob.Properties.Created,
-                            FileSize = blob.Properties.Length,
-                            Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                            BlobType = BlobType.File,
-                            StoragePath = result.Uri.ToString(),
-                            Path = blob.Name
-                        });
-
-                        tasks.Add(blob.DeleteIfExistsAsync());
-                    }
+                    tasks.Add(blobClient.DeleteIfExistsAsync());
                 }
 
                 Task.WaitAll(tasks.ToArray());
@@ -184,26 +174,39 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<BlobDto> AddFile(string path, string contentType, string name, byte[] file)
         {
-            CloudBlockBlob blob = await GetBlob(path);
+            BlobClient blobClient = await GetBlobClient(path);
 
-            blob.Properties.ContentType = contentType;
-            blob.Metadata.Add("DateCreated", DateTime.UtcNow.ToString("O"));
-            blob.Metadata.Add("FileName", name);
+            // Create a BlobHttpHeaders object to set the properties
+            BlobHttpHeaders blobHttpHeaders = new BlobHttpHeaders
+            {
+                ContentType = contentType,
+            };
 
-            await blob.UploadFromByteArrayAsync(file, 0, file.Length);
-            await blob.SetMetadataAsync();
+            // Create a new Dictionary to hold the metadata key-value pairs
+            Dictionary<string, string> metadata = new Dictionary<string, string>
+            {
+                { "DateCreated", DateTime.UtcNow.ToString("O") },
+                { "FileName", name },
+            };
 
-            await blob.FetchAttributesAsync();
+            await blobClient.UploadAsync(new BinaryData(file), new BlobUploadOptions()
+            {
+                HttpHeaders = blobHttpHeaders,
+                Metadata = metadata
+            });
+
+            // Get the BlobProperties
+            BlobProperties properties = await blobClient.GetPropertiesAsync();
             return new BlobDto
             {
-                ContentType = blob.Properties.ContentType,
-                DateModified = blob.Properties.LastModified,
-                DateCreated = blob.Properties.Created,
-                FileSize = blob.Properties.Length,
-                Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                BlobType = BlobType.File,
-                StoragePath = blob.Uri.ToString(),
-                Path = blob.Name
+                ContentType = properties.ContentType,
+                DateModified = properties.LastModified,
+                DateCreated = properties.CreatedOn,
+                FileSize = properties.ContentLength,
+                Name = HttpUtility.UrlDecode(properties.Metadata["FileName"]),
+                BlobType = AzureBlobType.File,
+                StoragePath = blobClient.Uri.ToString(),
+                Path = blobClient.Name
             };
         }
 
@@ -215,28 +218,23 @@ namespace FileManager.Azure.Services
         public async Task<IEnumerable<BlobDto>> GetFolderFiles(string path)
         {
             var container = await GetContainer();
-            var directory = container.GetDirectoryReference(path);
+            var blobs = container.GetBlobsAsync(BlobTraits.All, BlobStates.All, path);
 
             List<BlobDto> files = new List<BlobDto>();
-            foreach (IListBlobItem result in await directory.ListBlobsAsync())
+            await foreach (var blob in blobs)
             {
-                if (IsCloudBlob(result))
+                var client = await GetBlobClient(blob.Name);
+                files.Add(new BlobDto
                 {
-                    CloudBlob blob = (CloudBlob)result;
-
-                    await blob.FetchAttributesAsync();
-                    files.Add(new BlobDto
-                    {
-                        ContentType = blob.Properties.ContentType,
-                        DateModified = blob.Properties.LastModified,
-                        DateCreated = blob.Properties.Created,
-                        FileSize = blob.Properties.Length,
-                        Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                        BlobType = BlobType.File,
-                        StoragePath = result.Uri.ToString(),
-                        Path = blob.Name
-                    });
-                }
+                    ContentType = blob.Properties.ContentType,
+                    DateModified = blob.Properties.LastModified,
+                    DateCreated = blob.Properties.CreatedOn,
+                    FileSize = (long)blob.Properties.ContentLength,
+                    Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
+                    BlobType = AzureBlobType.File,
+                    StoragePath = client.Uri.ToString(),
+                    Path = blob.Name
+                });
             }
 
             return files;
@@ -249,14 +247,13 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<BlobDto> GetFolder(string path)
         {
-            var container = await GetContainer();
-            var directory = container.GetDirectoryReference(path);
+            var directory = await GetBlobClient(path);
 
             return new BlobDto
             {
-                BlobType = BlobType.Folder,
+                BlobType = AzureBlobType.Folder,
                 StoragePath = directory.Uri.ToString(),
-                Path = directory.Prefix,
+                Path = directory.Name,
                 Name = GetDirectoryName(path)
             };
         }
@@ -264,25 +261,27 @@ namespace FileManager.Azure.Services
         /// <summary>
         /// Gets all of the child folders from a given path
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="prefix"></param>
         /// <returns></returns>
-        public async Task<IEnumerable<BlobDto>> GetChildFolders(string path)
+        public async Task<IEnumerable<BlobDto>> GetChildFolders(string prefix)
         {
             var container = await GetContainer();
-            var directory = container.GetDirectoryReference(path);
+            var blobs = container.GetBlobsByHierarchyAsync(BlobTraits.All, BlobStates.All, "/", prefix);
 
             List<BlobDto> folders = new List<BlobDto>();
-            foreach (IListBlobItem result in await directory.ListBlobsAsync())
+
+            // List blobs with the given prefix
+            await foreach (BlobHierarchyItem blobHierarchyItem in blobs)
             {
-                if (IsCloudDirectory(result))
+                if (blobHierarchyItem.IsPrefix)
                 {
-                    CloudBlobDirectory dir = (CloudBlobDirectory)result;
+                    var blobClient = await GetBlobClient(blobHierarchyItem.Prefix);
                     folders.Add(new BlobDto
                     {
-                        BlobType = BlobType.Folder,
-                        StoragePath = dir.Uri.ToString(),
-                        Path = dir.Prefix,
-                        Name = GetDirectoryName(dir.Uri.ToString())
+                        BlobType = AzureBlobType.Folder,
+                        StoragePath = blobClient.Uri.ToString(),
+                        Path = blobHierarchyItem.Prefix,
+                        Name = GetDirectoryName(blobHierarchyItem.Prefix)
                     });
                 }
             }
@@ -301,26 +300,6 @@ namespace FileManager.Azure.Services
         }
 
         /// <summary>
-        /// indicates if the current blob is a folder
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool IsFolder(BlobDto item)
-        {
-            return item.BlobType == BlobType.Folder;
-        }
-
-        /// <summary>
-        /// Indicates if the current blog is a file
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool IsFile(BlobDto item)
-        {
-            return item.BlobType == BlobType.File;
-        }
-
-        /// <summary>
         /// Renames the given folder
         /// </summary>
         /// <param name="folder"></param>
@@ -333,30 +312,34 @@ namespace FileManager.Azure.Services
             string oldPath = folder.Path;
             string newPath = oldPath.Replace(folder.Name, newName);
 
-            var sourceBlobDir = container.GetDirectoryReference(folder.Path);
-            var destBlobDir = container.GetDirectoryReference(newPath);
-
-            TransferManager.Configurations.ParallelOperations = 64;
-            // Setup the transfer context and track the upoload progress
-            var context = new DirectoryTransferContext
+            var pages = container.GetBlobsByHierarchyAsync(prefix: oldPath);
+            var tasks = new List<Task>();
+            // List the blobs within the folder
+            await foreach (BlobHierarchyItem blobItem in pages)
             {
-                ProgressHandler = new Progress<TransferStatus>((progress) =>
-                {
-                    Console.WriteLine("Bytes uploaded: {0}", progress.BytesTransferred);
-                })
-            };
+                // Get the name of the blob within the folder
+                string blobName = blobItem.Blob.Name;
 
-            var copyDirOptions = new CopyDirectoryOptions
-            {
-                Recursive = true,
-                IncludeSnapshots = true
-            };
+                // Calculate the new blob name by replacing the folder name
+                string newBlobName = blobName.Replace(oldPath, newPath);
 
-            await TransferManager.CopyDirectoryAsync(sourceBlobDir, destBlobDir, true, copyDirOptions, context);
-            await DeleteFile(folder.Path);
+                // Create a reference to the original blob
+                BlobClient originalBlobClient = container.GetBlobClient(blobName);
+
+                // Create a reference to the new blob
+                BlobClient newBlobClient = container.GetBlobClient(newBlobName);
+
+                // Start the copy operation from the original blob to the new blob
+                await newBlobClient.StartCopyFromUriAsync(originalBlobClient.Uri);
+
+                // Delete the original blob
+                await originalBlobClient.DeleteIfExistsAsync();
+            }
+
+            var blobClient = await GetBlobClient(newPath);
 
             folder.Path = newPath;
-            folder.StoragePath = destBlobDir.Uri.ToString();
+            folder.StoragePath = blobClient.Uri.ToString();
             folder.DateModified = DateTime.UtcNow;
 
             return folder;
@@ -375,8 +358,10 @@ namespace FileManager.Azure.Services
 
             var blob = await UpdateFilePath(oldPath, newPath);
 
-            blob.Metadata.Add("FileName", Path.GetFileNameWithoutExtension(newName));
-            await blob.SetMetadataAsync();
+            BlobProperties properties = await blob.GetPropertiesAsync();
+            properties.Metadata.Remove("FileName");
+            properties.Metadata.Add("FileName", Path.GetFileNameWithoutExtension(newName));
+            await blob.SetMetadataAsync(properties.Metadata);
 
             file.Name = newName;
             file.StoragePath = blob.Uri.ToString();
@@ -392,16 +377,16 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<BlobDto> ReplaceFile(BlobDto file, Stream postedFile)
         {
-            CloudBlockBlob blob = await GetBlob(file.Path);
+            var blob = await GetBlobClient(file.Path);
             if (_storageOptions.TakeSnapshots)
             {
                 await blob.CreateSnapshotAsync();
             }
 
-            await blob.UploadFromStreamAsync(postedFile);
+            await blob.UploadAsync(postedFile);
 
-            await blob.FetchAttributesAsync();
-            file.FileSize = blob.Properties.Length;
+            BlobProperties properties = await blob.GetPropertiesAsync();
+            file.FileSize = properties.ContentLength;
             file.DateModified = DateTime.UtcNow;
 
             return file;
@@ -414,13 +399,16 @@ namespace FileManager.Azure.Services
         /// <returns></returns>
         public async Task<byte[]> GetFileBytes(string path)
         {
-            CloudBlockBlob blob = await GetBlob(path);
+            BlobClient blob = await GetBlobClient(path);
 
-            await blob.FetchAttributesAsync();
-            long fileByteLength = blob.Properties.Length;
+            BlobProperties properties = await blob.GetPropertiesAsync();
+            long fileByteLength = properties.ContentLength;
 
             byte[] myByteArray = new byte[fileByteLength];
-            await blob.DownloadToByteArrayAsync(myByteArray, 0);
+            using (var stream = new MemoryStream(myByteArray))
+            {
+                await blob.DownloadToAsync(stream);
+            }
 
             return myByteArray;
         }
@@ -440,32 +428,36 @@ namespace FileManager.Azure.Services
                 path = path + "/";
             }
 
-            string newPath = $"{path}{folder.Name}";
+            string oldPath = folder.Path;
+            string newPath = oldPath.Replace(folder.Name, path);
 
-            var sourceBlobDir = container.GetDirectoryReference(folder.Path);
-            var destBlobDir = container.GetDirectoryReference(newPath);
-
-            TransferManager.Configurations.ParallelOperations = 64;
-            // Setup the transfer context and track the upoload progress
-            DirectoryTransferContext context = new DirectoryTransferContext
+            var blobs = container.GetBlobsAsync(prefix: folder.Path);
+            // List the blobs within the folder
+            await foreach (BlobItem blobItem in blobs)
             {
-                ProgressHandler = new Progress<TransferStatus>((progress) =>
-                {
-                    Console.WriteLine("Bytes uploaded: {0}", progress.BytesTransferred);
-                })
-            };
+                // Get the name of the blob within the folder
+                string blobName = blobItem.Name;
 
-            var copyDirOptions = new CopyDirectoryOptions
-            {
-                Recursive = true,
-                IncludeSnapshots = true
-            };
+                // Calculate the new blob name by replacing the folder name
+                string newBlobName = blobName.Replace(oldPath, newPath);
 
-            await TransferManager.CopyDirectoryAsync(sourceBlobDir, destBlobDir, true, copyDirOptions, context);
-            await DeleteFile(folder.Path);
+                // Create a reference to the original blob
+                BlobClient originalBlobClient = container.GetBlobClient(blobName);
+
+                // Create a reference to the new blob
+                BlobClient newBlobClient = container.GetBlobClient(newBlobName);
+
+                // Start the copy operation from the original blob to the new blob
+                await newBlobClient.StartCopyFromUriAsync(originalBlobClient.Uri);
+
+                // Delete the original blob
+                await originalBlobClient.DeleteIfExistsAsync();
+            }
+
+            var blobClient = await GetBlobClient(newPath);
 
             folder.Path = newPath;
-            folder.StoragePath = destBlobDir.Uri.ToString();
+            folder.StoragePath = blobClient.Uri.ToString();
             folder.DateModified = DateTime.UtcNow;
 
             return folder;
@@ -497,33 +489,33 @@ namespace FileManager.Azure.Services
             var folders = new List<BlobDto>();
             var files = new List<BlobDto>();
 
-            foreach (var listBlobItem in await container.ListBlobsAsync())
+            var blobs = container.GetBlobsByHierarchy();
+            foreach (var blobItem in blobs)
             {
-                if (IsCloudDirectory(listBlobItem))
+                if (!blobItem.IsBlob)
                 {
-                    CloudBlobDirectory blob = (CloudBlobDirectory)listBlobItem;
+                    var blobClient = await GetBlobClient(blobItem.Prefix);
                     folders.Add(new BlobDto
                     {
-                        BlobType = BlobType.Folder,
-                        StoragePath = blob.Uri.ToString()
+                        BlobType = AzureBlobType.Folder,
+                        StoragePath = blobClient.Uri.ToString()
                     });
                 }
-
-                if (IsCloudBlob(listBlobItem))
+                else
                 {
-                    CloudBlob blob = (CloudBlob)listBlobItem;
+                    var blobClient = await GetBlobClient(blobItem.Prefix);
 
-                    await blob.FetchAttributesAsync();
+                    BlobProperties properties = await blobClient.GetPropertiesAsync();
                     files.Add(new BlobDto
                     {
-                        ContentType = blob.Properties.ContentType,
-                        DateModified = blob.Properties.LastModified,
-                        DateCreated = blob.Properties.Created,
-                        FileSize = blob.Properties.Length,
-                        Name = HttpUtility.UrlDecode(blob.Metadata["FileName"]),
-                        BlobType = BlobType.File,
-                        StoragePath = listBlobItem.Uri.ToString(),
-                        Path = blob.Name
+                        ContentType = properties.ContentType,
+                        DateModified = properties.LastModified,
+                        DateCreated = properties.CreatedOn,
+                        FileSize = properties.ContentLength,
+                        Name = HttpUtility.UrlDecode(properties.Metadata["FileName"]),
+                        BlobType = AzureBlobType.File,
+                        StoragePath = blobClient.Uri.ToString(),
+                        Path = blobItem.Prefix
                     });
                 }
             }
@@ -549,59 +541,45 @@ namespace FileManager.Azure.Services
                 return true;
             }
 
-            var container = await GetContainer();
             if (path[0].Equals('/'))
             {
                 path = path.Substring(1);
             }
 
-            return await container.GetBlockBlobReference(path).ExistsAsync();
+            var blobClient = await GetBlobClient(path);
+            return await blobClient.ExistsAsync();
         }
 
-        private async Task<CloudBlockBlob> UpdateFilePath(string oldFilePath, string newFilePath)
+        private async Task<BlobClient> UpdateFilePath(string oldFilePath, string newFilePath)
         {
-            CloudBlockBlob source = await GetBlob(oldFilePath);
-            CloudBlockBlob target = await GetBlob(newFilePath);
+            var source = await GetBlobClient(oldFilePath);
+            var target = await GetBlobClient(newFilePath);
 
-            await target.StartCopyAsync(source);
+            var operation = await target.StartCopyFromUriAsync(source.Uri);
+            long result = await operation.WaitForCompletionAsync();
 
-            while (target.CopyState.Status == CopyStatus.Pending)
-                await Task.Delay(100);
-
-            if (target.CopyState.Status != CopyStatus.Success)
-                throw new Exception("Rename failed: " + target.CopyState.Status);
+            if (result == 0)
+                throw new Exception("Rename failed: " + newFilePath);
 
             await source.DeleteAsync();
 
             return target;
         }
 
-        public async Task<CloudBlobContainer> GetContainer()
+        public async Task<BlobContainerClient> GetContainer()
         {
-            var client = GetClient();
-            var container = client.GetContainerReference(_container);
+            var container = new BlobContainerClient(_storageOptions.StorageConnStr, _container);
 
             if (!await container.ExistsAsync())
             {
                 await container.CreateAsync();
-
-                // set access level to "blob", which means user can access the blob 
-                // but not look through the whole container
-                // this means the user must have a URL to the blob to access it
-                BlobContainerPermissions permissions = new BlobContainerPermissions();
-                permissions.PublicAccess = BlobContainerPublicAccessType.Blob;
-                await container.SetPermissionsAsync(permissions);
+                await container.SetAccessPolicyAsync(PublicAccessType.Blob);
             }
 
             return container;
         }
 
-        private CloudBlobClient GetClient()
-        {
-            return CloudStorageAccount.Parse(_storageOptions.StorageConnStr).CreateCloudBlobClient();
-        }
-
-        private async Task<CloudBlockBlob> GetBlob(string path)
+        private async Task<BlobClient> GetBlobClient(string path)
         {
             if (path[0].Equals('/'))
             {
@@ -609,19 +587,7 @@ namespace FileManager.Azure.Services
             }
 
             var container = await GetContainer();
-            return container.GetBlockBlobReference(path);
-        }
-
-        private bool IsCloudBlob(IListBlobItem item)
-        {
-            return item.GetType() == typeof(CloudBlob) ||
-                   item.GetType().GetTypeInfo().BaseType == typeof(CloudBlob);
-        }
-
-        private bool IsCloudDirectory(IListBlobItem item)
-        {
-            return item.GetType() == typeof(CloudBlobDirectory) ||
-                   item.GetType().GetTypeInfo().BaseType == typeof(CloudBlobDirectory);
+            return container.GetBlobClient(path);
         }
 
         private long GetContainerSizeLimit()

@@ -17,13 +17,18 @@ jobs:
     - name: Setup Dotnet
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '3.1.x'
+        dotnet-version: '7.0.x'
+        
+    - name: Setup node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
     
-    - name: Install Storage Emulator
-      run: |
-          $msiPath = "$($env:USERPROFILE)\MicrosoftAzureStorageEmulator.msi"
-          (New-Object Net.WebClient).DownloadFile('https://go.microsoft.com/fwlink/?linkid=717179&clcid=0x409', $msiPath)
-          cmd /c start /wait msiexec /i $msiPath /quiet
+    - name: Install azurite
+      run: npm install -g azurite    
+      
+    - name: Run azurite
+      run: azurite-blob -s --blobPort 7777
           
     - name: Restore Solution
       run: dotnet restore FileManager.Azure.sln

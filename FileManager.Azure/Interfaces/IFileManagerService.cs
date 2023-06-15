@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
 using FileManager.Azure.Dtos;
 using FileManager.Azure.Models;
-using Microsoft.Azure.Storage.Blob;
 
 namespace FileManager.Azure.Interfaces
 {
@@ -17,9 +17,7 @@ namespace FileManager.Azure.Interfaces
         Task<List<BlobDto>> DeleteFile(string path);
         Task<BlobDto> AddFile(string path, string contentType, string name, byte[] file);
         Task<IEnumerable<BlobDto>> GetFolderFiles(string path);
-        Task<IEnumerable<BlobDto>> GetChildFolders(string path);
-        bool IsFolder(BlobDto item);
-        bool IsFile(BlobDto item);
+        Task<IEnumerable<BlobDto>> GetChildFolders(string prefix);
         Task<BlobDto> RenameFolder(BlobDto folder, string newName);
         Task<BlobDto> RenameFile(BlobDto file, string newName);
         Task<BlobDto> ReplaceFile(BlobDto file, Stream postedFile);
@@ -27,6 +25,6 @@ namespace FileManager.Azure.Interfaces
         Task<BlobDto> MoveFolder(BlobDto folder, string path);
         Task<BlobDto> MoveFile(BlobDto file, string path);
         Task<SummaryInfo> GetSummaryInfo();
-        Task<CloudBlobContainer> GetContainer();
+        Task<BlobContainerClient> GetContainer();
     }
 }

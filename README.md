@@ -28,3 +28,9 @@ public TestClass(Func<string, IFileManager> fileManagerFactory) {
 ```
 
 Make sure to add two settings to the appsettings.json file. First and most importantly is the `StorageConnStr` property and the other is a boolean property called `TakeSnapshots`. If TakeSnapshots is set to true then it will take a snapshot of a file whenever it is either replaced or deleted.
+
+For more information check out this blog article: https://www.sammisinno.com/azure/simplifing-access-to-azure-blob-storage
+
+In order to run the tests you have to install the azurite npm package and run this command line
+
+`azurite-blob -s --blobPort 7777`

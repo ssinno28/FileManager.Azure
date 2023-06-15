@@ -10,7 +10,6 @@ using FileManager.Azure.Dtos;
 using FileManager.Azure.Helpers;
 using FileManager.Azure.Interfaces;
 using FileManager.Azure.Models;
-using FileManager.Azure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,12 +27,6 @@ namespace FileManager.Azure.Tests
         private IFileManagerService _fileManagerService;
         private readonly List<string> _tempFiles = new List<string>();
 
-        [OneTimeSetUp]
-        public void FixtureSetUp()
-        {
-            StorageEmulator.Start();
-        }
-
         [SetUp]
         public void Init()
         {
@@ -49,7 +42,7 @@ namespace FileManager.Azure.Tests
             var configMock = new Mock<IOptions<StorageOptions>>();
             configMock.SetupGet(x => x.Value).Returns(() => new StorageOptions
             {
-                StorageConnStr = "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1"
+                StorageConnStr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:7777/devstoreaccount1;"
             });
 
             var builder = new ConfigurationBuilder();
@@ -208,7 +201,7 @@ namespace FileManager.Azure.Tests
             }
 
             var files = await _fileManagerService.GetFolderFiles("temp/");
-            Assert.AreEqual(files.Count(), 5);
+            Assert.AreEqual(5, files.Count());
         }
 
         [Test]
@@ -230,7 +223,7 @@ namespace FileManager.Azure.Tests
             await _fileManagerService.RenameFolder(new BlobDto
             {
                 Path = "temp/",
-                BlobType = BlobType.Folder,
+                BlobType = AzureBlobType.Folder,
                 Name = "temp"
             }, "temp2");
 
@@ -257,11 +250,11 @@ namespace FileManager.Azure.Tests
             await _fileManagerService.MoveFolder(new BlobDto
             {
                 Path = "temp/",
-                BlobType = BlobType.Folder,
+                BlobType = AzureBlobType.Folder,
                 Name = "temp"
-            }, "temp2/");
+            }, "temp2");
 
-            var files = await _fileManagerService.GetFolderFiles("temp2/temp");
+            var files = await _fileManagerService.GetFolderFiles("temp2/");
             Assert.AreEqual(5, files.Count());
         }
 
@@ -274,7 +267,7 @@ namespace FileManager.Azure.Tests
             }
 
             var files = await _fileManagerService.GetChildFolders("temp/");
-            Assert.AreEqual(files.Count(), 5);
+            Assert.AreEqual(5, files.Count());
         }
 
         private string CreateTempFile()
