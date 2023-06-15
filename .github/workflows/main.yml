@@ -38,9 +38,10 @@ jobs:
       
     - name: Test Solution
       run: dotnet test FileManager.Azure.sln
-      
+          
     - name: Publish FileManager.Azure
-      uses: rohith/publish-nuget@v2
+      uses: alirezanet/publish-nuget@v3.0.0
       with:
           PROJECT_FILE_PATH: FileManager.Azure/FileManager.Azure.csproj
           NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+          INCLUDE_SYMBOLS: true
